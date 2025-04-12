@@ -1,0 +1,48 @@
+name: Build extensions
+on: [pull_request]
+
+jobs:
+  build:
+    name: Build extensions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout extensions
+        uses: actions/checkout@v4
+      - name: Checkout dist
+        uses: actions/checkout@v4
+        with:
+          repository: NotNite/moonlight-test-dist
+          path: ${{ github.workspace }}/local/dist
+          ref: main
+
+      # TODO: build on ghcr instead
+      - name: Checkout runner
+        uses: actions/checkout@v4
+        with:
+          repository: moonlight-mod/extensions-runner
+          path: ${{ github.workspace }}/local/runner
+          ref: rewrite # FIXME
+      - name: Build runner image
+        working-directory: ${{ github.workspace }}/local/runner
+        run: docker build -t moonlight-mod/extensions-runner:latest .
+
+      - name: Run runner
+        working-directory: ${{ github.workspace }}/local/runner
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/moonlight/manifests:ro" \
+            -v "${{ github.workspace }}/local/dist:/moonlight/dist:ro" \
+            -v "${{ github.workspace }}/local/work:/moonlight/work:ro" \
+            --mount "type=tmpfs,dst=/moonlight/temp" \
+            -v "/var/run/docker.sock:/var/run/docker.sock" \
+            -e "MOONLIGHT_WORK_HOST_PATH=${{ github.workspace }}/local/work" \
+            moonlight-mod/extensions-runner:latest
+
+      - name: Write summary
+        run: cat ${{ github.workspace }}/local/work/summary.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload output asars
+        uses: actions/upload-artifact@v4
+        with:
+          name: asars
+          path: ${{ github.workspace }}/local/work/output/*.asar
