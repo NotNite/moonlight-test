@@ -29,11 +29,10 @@ jobs:
       - name: Run runner
         working-directory: ${{ github.workspace }}/local/runner
         run: |
-          mkdir ${{ github.workspace }}/local/work
           docker run --rm \
             -v "${{ github.workspace }}:/moonlight/manifests:ro" \
-            -v "${{ github.workspace }}/local/dist:/moonlight/dist:ro" \
-            -v "${{ github.workspace }}/local/work:/moonlight/work:ro" \
+            -v "${{ github.workspace }}/local/dist:/moonlight/dist" \
+            -v "${{ github.workspace }}/local/work:/moonlight/work" \
             --mount "type=tmpfs,dst=/moonlight/temp" \
             -v "/var/run/docker.sock:/var/run/docker.sock" \
             -e "MOONLIGHT_WORK_HOST_PATH=${{ github.workspace }}/local/work" \
